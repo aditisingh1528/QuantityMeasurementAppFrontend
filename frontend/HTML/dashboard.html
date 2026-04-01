@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Quantity Measurement App</title>
+  <link rel="stylesheet" href="../CSS/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+</head>
+<body>
+
+  <div id="dashboard-page" class="page">
+
+    <header class="dash-header">
+      <div class="header-brand">
+        <span class="material-icons-round" style="color:#5b8cff;font-size:22px;">straighten</span>
+        <span class="brand-title">Quantity Measurement</span>
+      </div>
+      <div class="header-right">
+        <span class="user-pill">
+          <span class="material-icons-round" style="font-size:18px;vertical-align:middle;">account_circle</span>
+          <span id="username-display">User</span>
+        </span>
+        <button class="btn-logout" onclick="handleLogout()">
+          <span class="material-icons-round">logout</span> Logout
+        </button>
+      </div>
+    </header>
+
+    <div class="dash-body">
+
+      <div class="calc-panel">
+
+        <div class="welcome-banner">Welcome To Quantity Measurement</div>
+
+        <div class="section-label">CHOOSE TYPE</div>
+        <div class="type-grid" id="type-grid">
+          <button class="type-card active" data-type="Length" onclick="selectType(this)">
+            <span class="type-icon">✏️</span>
+            <span class="type-name">Length</span>
+          </button>
+          <button class="type-card" data-type="Weight" onclick="selectType(this)">
+            <span class="type-icon">⚖️</span>
+            <span class="type-name">Weight</span>
+          </button>
+          <button class="type-card" data-type="Temperature" onclick="selectType(this)">
+            <span class="type-icon">🌡️</span>
+            <span class="type-name">Temperature</span>
+          </button>
+          <button class="type-card" data-type="Volume" onclick="selectType(this)">
+            <span class="type-icon">🧴</span>
+            <span class="type-name">Volume</span>
+          </button>
+        </div>
+
+        <div class="section-label">CHOOSE ACTION</div>
+        <div class="action-tabs" id="action-tabs">
+          <button class="action-tab active" data-action="comparison" onclick="selectAction(this)">Comparison</button>
+          <button class="action-tab" data-action="conversion" onclick="selectAction(this)">Conversion</button>
+          <button class="action-tab" data-action="arithmetic" onclick="selectAction(this)">Arithmetic</button>
+        </div>
+
+        <div class="sub-tabs hidden" id="sub-tabs">
+          <button class="sub-tab active" data-op="ADD" onclick="selectSubOp(this)">+ Add</button>
+          <button class="sub-tab" data-op="SUBTRACT" onclick="selectSubOp(this)">− Subtract</button>
+          <button class="sub-tab" data-op="DIVIDE" onclick="selectSubOp(this)">÷ Divide</button>
+        </div>
+
+        <div class="inputs-wrapper">
+
+          <div class="two-op-row" id="two-op-row">
+            <div class="operand-card">
+              <div class="op-label" id="label-val1">FROM</div>
+              <input type="number" class="big-number-input" id="val1" value="1" step="any" oninput="updateResult()">
+              <div class="unit-select-row">
+                <select class="unit-select" id="unit1" onchange="updateResult()"></select>
+              </div>
+            </div>
+
+            <div class="op-connector" id="op-connector">
+              <span class="connector-symbol" id="connector-symbol">=</span>
+            </div>
+
+            <div class="operand-card" id="operand2-card">
+              <div class="op-label" id="label-val2">TO</div>
+              <div class="big-number-input result-preview" id="result-preview">—</div>
+              <input type="number" class="big-number-input hidden" id="val2" value="1" step="any" oninput="updateResult()">
+              <div class="unit-select-row">
+                <select class="unit-select" id="unit2" onchange="updateResult()"></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="compare-result-row hidden" id="compare-result-row">
+            <div class="result-label-sm">RESULT</div>
+            <div class="compare-result-badge" id="compare-result-badge">—</div>
+          </div>
+
+          <div class="arith-result-row hidden" id="arith-result-row">
+            <div class="result-label-sm">RESULT</div>
+            <div class="arith-result-value" id="arith-result-value">—</div>
+            <select class="unit-select result-unit-sel" id="result-unit"></select>
+          </div>
+
+          <button class="btn-execute hidden" id="execute-btn" onclick="executeOperation()">
+            <span class="material-icons-round">play_arrow</span>
+            <span id="execute-label">Calculate</span>
+          </button>
+
+          <p class="api-error" id="api-error"></p>
+        </div>
+
+      </div>
+
+      <aside class="history-sidebar">
+        <div class="history-top">
+          <div class="history-title">
+            <span class="material-icons-round">history</span> Session History
+          </div>
+          <button class="clear-btn" onclick="clearHistory()">Clear</button>
+        </div>
+        <div class="history-list" id="history-list">
+          <div class="history-empty">No operations yet</div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+  <script src="../JS/api.js"></script>
+  <script src="../JS/dashboard.js"></script>
+  <script src="../JS/main.js"></script>
+</body>
+</html>
