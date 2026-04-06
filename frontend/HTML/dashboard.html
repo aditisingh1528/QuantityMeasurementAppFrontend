@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard — Quantity Measurement App</title>
+  <title>Quantity Measurement App</title>
   <link rel="stylesheet" href="../CSS/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
@@ -18,11 +18,15 @@
         <span class="brand-title">Quantity Measurement</span>
       </div>
       <div class="header-right">
-        <span class="user-pill">
+        <!-- Shown when logged in -->
+        <span class="user-pill" id="user-pill" style="display:none;">
           <span class="material-icons-round" style="font-size:18px;vertical-align:middle;">account_circle</span>
           <span id="username-display">User</span>
         </span>
-        <button class="btn-logout" onclick="handleLogout()">
+        <button class="btn-header-login" id="btn-header-login" onclick="window.location.href='login.html'">
+          <span class="material-icons-round" style="font-size:16px;">login</span> Login
+        </button>
+        <button class="btn-logout" id="btn-logout" style="display:none;" onclick="handleLogout()">
           <span class="material-icons-round">logout</span> Logout
         </button>
       </div>
@@ -61,6 +65,7 @@
           <button class="action-tab" data-action="arithmetic" onclick="selectAction(this)">Arithmetic</button>
         </div>
 
+        <!-- Arithmetic sub-operation tabs -->
         <div class="sub-tabs hidden" id="sub-tabs">
           <button class="sub-tab active" data-op="ADD" onclick="selectSubOp(this)">+ Add</button>
           <button class="sub-tab" data-op="SUBTRACT" onclick="selectSubOp(this)">− Subtract</button>
@@ -72,9 +77,9 @@
           <div class="two-op-row" id="two-op-row">
             <div class="operand-card">
               <div class="op-label" id="label-val1">FROM</div>
-              <input type="number" class="big-number-input" id="val1" value="1" step="any" oninput="updateResult()">
+              <input type="number" class="big-number-input" id="val1" value="1" step="any">
               <div class="unit-select-row">
-                <select class="unit-select" id="unit1" onchange="updateResult()"></select>
+                <select class="unit-select" id="unit1"></select>
               </div>
             </div>
 
@@ -85,22 +90,24 @@
             <div class="operand-card" id="operand2-card">
               <div class="op-label" id="label-val2">TO</div>
               <div class="big-number-input result-preview" id="result-preview">—</div>
-              <input type="number" class="big-number-input hidden" id="val2" value="1" step="any" oninput="updateResult()">
+              <input type="number" class="big-number-input hidden" id="val2" value="1" step="any">
               <div class="unit-select-row">
-                <select class="unit-select" id="unit2" onchange="updateResult()"></select>
+                <select class="unit-select" id="unit2"></select>
               </div>
             </div>
           </div>
 
+          <!-- Comparison result -->
           <div class="compare-result-row hidden" id="compare-result-row">
             <div class="result-label-sm">RESULT</div>
             <div class="compare-result-badge" id="compare-result-badge">—</div>
           </div>
 
+          <!-- Arithmetic result (no result-unit selector per requirement #8) -->
           <div class="arith-result-row hidden" id="arith-result-row">
             <div class="result-label-sm">RESULT</div>
             <div class="arith-result-value" id="arith-result-value">—</div>
-            <select class="unit-select result-unit-sel" id="result-unit"></select>
+            <span class="arith-result-unit" id="arith-result-unit"></span>
           </div>
 
           <button class="btn-execute hidden" id="execute-btn" onclick="executeOperation()">
@@ -113,13 +120,32 @@
 
       </div>
 
+      <!-- History Sidebar -->
       <aside class="history-sidebar">
         <div class="history-top">
           <div class="history-title">
-            <span class="material-icons-round">history</span> Session History
+            <span class="material-icons-round">history</span> History
           </div>
-          <button class="clear-btn" onclick="clearHistory()">Clear</button>
+          <div class="history-actions">
+            <button class="clear-btn" onclick="clearSessionHistory()">Clear</button>
+          </div>
         </div>
+
+        <!-- History login prompt (shown when not logged in) -->
+        <div class="history-login-prompt" id="history-login-prompt">
+          <span class="material-icons-round" style="font-size:32px;color:#c5cce8;margin-bottom:8px;">lock</span>
+          <p>Session history shows below.</p>
+          <p><a href="login.html">Login</a> to save &amp; view full history.</p>
+        </div>
+
+        <!-- Full history button (shown when logged in) -->
+        <div class="history-full-btn-row hidden" id="history-full-btn-row">
+          <button class="btn-load-history" id="btn-load-history" onclick="loadFullHistory()">
+            <span class="material-icons-round" style="font-size:14px;">cloud_download</span>
+            Load Full History
+          </button>
+        </div>
+
         <div class="history-list" id="history-list">
           <div class="history-empty">No operations yet</div>
         </div>

@@ -2,10 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=login.html">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quantity Measurement App</title>
 </head>
 <body>
-  <p>Redirecting to <a href="login.html">login</a>…</p>
+  <script>
+    // Always open dashboard — no login required for main app
+    window.location.replace("dashboard.html");
+  </script>
+  <noscript><a href="dashboard.html">Open App</a></noscript>
 </body>
 </html>

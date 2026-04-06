@@ -1,5 +1,23 @@
 "use strict";
 
+// ─── Clear form fields on page load (Fix: prevent auto-fill) 
+
+window.addEventListener("load", () => {
+  // Always clear auth fields — prevents browser auto-fill from persisting
+  const ids = [
+    "login-username", "login-password",
+    "signup-name", "signup-username", "signup-password", "signup-mobile"
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  // Note: we do NOT auto-redirect to dashboard here.
+  // The user navigated to login.html on purpose (e.g. to log in before viewing history).
+});
+
+// ─── Tab switching 
+
 function switchTab(tab) {
   const isLogin = tab === "login";
   document.getElementById("login-form").classList.toggle("hidden", !isLogin);
@@ -9,6 +27,8 @@ function switchTab(tab) {
   document.getElementById("login-error").textContent  = "";
   document.getElementById("signup-error").textContent = "";
 }
+
+// ─── Password visibility toggle ──
 
 function togglePw(inputId, btn) {
   const input = document.getElementById(inputId);
@@ -22,132 +42,210 @@ function togglePw(inputId, btn) {
   }
 }
 
+// ─── handleLogin ─
+
 async function handleLogin(e) {
   e.preventDefault();
   const errEl = document.getElementById("login-error");
   errEl.textContent = "Authenticating…";
+  errEl.style.color = "#5b8cff";
 
   const username = document.getElementById("login-username").value.trim();
   const password = document.getElementById("login-password").value;
 
+  if (!username || !password) {
+    errEl.textContent = "Please enter username and password.";
+    errEl.style.color = "";
+    return;
+  }
+
   try {
     const data = await api.performAuth("/auth/login", username, password);
+
+    // Store login state
     state.token    = data.token;
     state.username = username;
-
     sessionStorage.setItem("token",    data.token);
     sessionStorage.setItem("username", username);
 
+    // Clear sensitive field
     document.getElementById("login-password").value = "";
     errEl.textContent = "";
+
     window.location.href = "dashboard.html";
   } catch (err) {
     errEl.textContent = "Login failed: " + err.message;
+    errEl.style.color = "";
   }
 }
+
+// ─── handleSignup ─
 
 async function handleSignup(e) {
   e.preventDefault();
   const errEl = document.getElementById("signup-error");
   errEl.textContent = "";
 
+  const name     = document.getElementById("signup-name").value.trim();
   const username = document.getElementById("signup-username").value.trim();
   const password = document.getElementById("signup-password").value;
+  const mobile   = document.getElementById("signup-mobile").value.trim();
+
+  if (!username || !password) {
+    errEl.textContent = "Username and password are required.";
+    return;
+  }
+
+  // Basic password validation: 3+ chars, at least one uppercase, one special char
+  const pwValid = password.length >= 3
+    && /[A-Z]/.test(password)
+    && /[^a-zA-Z0-9]/.test(password);
+
+  if (!pwValid) {
+    errEl.textContent = "Password must be 3+ chars with an uppercase letter and a special character.";
+    return;
+  }
 
   try {
+    errEl.textContent = "Creating account…";
+    errEl.style.color = "#5b8cff";
     await api.performAuth("/auth/register", username, password);
-    alert("Account created! You can now log in.");
+
+    errEl.textContent = "";
+    errEl.style.color = "";
+
+    // Switch to login tab and pre-fill username for convenience
     switchTab("login");
     document.getElementById("login-username").value = username;
     document.getElementById("signup-form").reset();
+    // Re-clear all signup fields explicitly
+    ["signup-name","signup-username","signup-password","signup-mobile"]
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+
+    showToast("Account created! Please log in.");
   } catch (err) {
     errEl.textContent = "Registration failed: " + err.message;
+    errEl.style.color = "";
   }
 }
 
+// ─── handleLogout (also called from dashboard.js) ──────
+
 function handleLogout() {
+  // Clear all auth state
   state.token    = null;
   state.username = null;
   sessionStorage.clear();
-  window.location.href = "login.html";
+  localStorage.removeItem("app_activeType");
+  localStorage.removeItem("app_activeAction");
+  localStorage.removeItem("app_activeSubOp");
+
+  // Redirect to dashboard (public, no login needed)
+  window.location.replace("dashboard.html");
 }
 
-/*
-  Google OAuth 2.0 — Implementation Steps
-  =========================================
+// ─── Google Sign-In ───
+//
+// Uses Google Identity Services (GIS) — ID Token popup flow.
+// No redirect URI needed.
+//
+// ⚠️  REQUIRED to fix "Error 400: origin_mismatch":
+//   1. Go to https://console.cloud.google.com
+//   2. APIs & Services → Credentials → your OAuth 2.0 Client ID
+//   3. Under "Authorised JavaScript origins", add the EXACT origin
+//      you serve the app from (check your browser address bar), e.g.:
+//        http://localhost:5500
+//        http://127.0.0.1:5500
+//   4. Save — wait ~5 minutes for Google to propagate the change.
+//   No "Authorised redirect URIs" entry is needed.
 
-  STEP 1 — Create a Google Cloud project
-    Go to https://console.cloud.google.com, create a project (or pick an
-    existing one). Enable the "Google Identity" API if prompted.
+const GOOGLE_CLIENT_ID = "1047951815164-uoahl7stijinetbksodc9l868vf8p77m.apps.googleusercontent.com";
 
-  STEP 2 — Configure the OAuth consent screen
-    APIs & Services → OAuth consent screen
-    - User type: External
-    - Fill in App name, support email, developer contact
-    - Add scopes: openid, email, profile
+// Render the real Google-branded button directly into #google-login-btn.
+// renderButton() fires instantly on click — unlike prompt() which browsers silently suppress.
+// Called once after the GIS script loads (see DOMContentLoaded listener below).
+function initGoogleButton() {
+  if (typeof google === "undefined" || !google.accounts) return;
 
-  STEP 3 — Create OAuth credentials
-    APIs & Services → Credentials → Create Credentials → OAuth client ID
-    - Application type: Web application
-    - Authorised JavaScript origins: e.g. http://localhost:5500
-    - Authorised redirect URIs: e.g. http://localhost:5500/HTML/dashboard.html
-    - Copy the Client ID shown after saving
+  const container = document.getElementById("google-login-btn");
+  if (!container) return;
 
-  STEP 4 — Load the Google Identity Services library in login.html
-    Add before </body>:
-      <script src="https://accounts.google.com/gsi/client" async defer></script>
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback:  handleGoogleCredential
+    // No ux_mode — uses ID token flow (One Tap / FedCM).
+    // Only needs Authorized JavaScript Origins, NOT redirect URIs.
+  });
 
-  STEP 5 — Add the sign-in button markup inside the login form
-    Replace the current #google-login-btn with:
-      <div id="g_id_onload"
-           data-client_id="YOUR_CLIENT_ID_HERE"
-           data-callback="handleGoogleCredential"
-           data-auto_prompt="false">
-      </div>
-      <div class="g_id_signin" data-type="standard" data-width="100%"></div>
+  // Replace our custom button markup with the real Google-signed button.
+  container.innerHTML = "";
+  google.accounts.id.renderButton(container, {
+    type:  "standard",
+    theme: "filled_blue",
+    size:  "large",
+    text:  "signin_with",
+    shape: "rectangular",
+    width: container.offsetWidth || 320
+  });
+}
 
-  STEP 6 — Handle the credential callback (add this function below)
-    async function handleGoogleCredential(response) {
-      // response.credential is a signed JWT (ID token) from Google
-      const res = await fetch(`${API_BASE}/auth/google`, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ idToken: response.credential })
-      });
-      if (!res.ok) {
-        document.getElementById("login-error").textContent = "Google sign-in failed.";
-        return;
-      }
-      const data = await res.json();
-      sessionStorage.setItem("token",    data.token);
-      sessionStorage.setItem("username", data.username);
-      window.location.href = "dashboard.html";
-    }
-
-  STEP 7 — Add a backend endpoint  POST /api/v1/auth/google
-    In AuthController.cs / AuthService:
-    - Accept { idToken: string } in the request body
-    - Verify the token using Google's tokeninfo endpoint:
-        GET https://oauth2.googleapis.com/tokeninfo?id_token=<idToken>
-      Or use the Google.Apis.Auth NuGet package:
-        GoogleJsonWebSignature.ValidateAsync(idToken)
-    - Extract email and name from the payload
-    - Find or create a User record for that email
-    - Return your own JWT exactly as /auth/login does
-
-  STEP 8 — (Optional) Persist the session
-    The token is already stored in sessionStorage (step 6), matching the
-    pattern used by handleLogin(). main.js reads it on dashboard load.
-*/
-
+// Wire up once the DOM (and hopefully GIS) is ready.
+// The GIS script tag has async+defer so it may load slightly after DOMContentLoaded;
+// we poll briefly to handle that race condition.
 document.addEventListener("DOMContentLoaded", () => {
-  const googleBtn = document.getElementById("google-login-btn");
-  if (googleBtn) {
-    googleBtn.addEventListener("click", () => {
-      alert(
-        "Google Sign-In is not yet configured.\n\n" +
-        "Follow the steps documented in JS/auth.js to set it up."
-      );
-    });
-  }
+  let attempts = 0;
+  const interval = setInterval(() => {
+    attempts++;
+    if (typeof google !== "undefined" && google.accounts) {
+      clearInterval(interval);
+      initGoogleButton();
+    } else if (attempts >= 20) {   // give up after ~2 s
+      clearInterval(interval);
+    }
+  }, 100);
 });
+
+// Kept so the onclick="handleGoogleSignIn()" in login.html still works as fallback.
+function handleGoogleSignIn() {
+  if (typeof google === "undefined" || !google.accounts) {
+    showToast("Google Sign-In library not loaded. Check your internet connection.", "warn");
+    return;
+  }
+  initGoogleButton();
+}
+
+// Called by GIS with the signed ID token JWT after the user picks an account.
+async function handleGoogleCredential(response) {
+  try {
+    const res = await fetch(`${API_BASE}/auth/google`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ idToken: response.credential })
+    });
+    if (!res.ok) throw new Error("Google auth rejected by server.");
+    const data = await res.json();
+
+    state.token    = data.token;
+    state.username = data.username ?? data.email;
+    sessionStorage.setItem("token",    data.token);
+    sessionStorage.setItem("username", state.username);
+
+    window.location.href = "dashboard.html";
+  } catch (err) {
+    document.getElementById("login-error").textContent = "Google sign-in failed: " + err.message;
+  }
+}
+
+// ─── Toast helper ─
+
+function showToast(msg, type = "info") {
+  let toast = document.getElementById("app-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "app-toast";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.className   = "app-toast show " + type;
+  setTimeout(() => toast.classList.remove("show"), 3000);
+}

@@ -1,5 +1,7 @@
 "use strict";
 
+// ─── Unit definitions 
+
 const UNITS = {
   Length:      ["FEET", "INCHES", "YARDS", "CENTIMETERS"],
   Weight:      ["KILOGRAM", "GRAM", "POUND"],
@@ -23,18 +25,27 @@ const UNIT_LABELS = {
   KELVIN:      "Kelvin"
 };
 
-const API_BASE    = "http://localhost:8080/api/v1";
-const JSON_BASE   = "http://localhost:3000";
-const DEBOUNCE_MS = 500;
+// ─── API base URLs 
+
+const API_BASE  = "http://localhost:8080/api/v1";
+const JSON_BASE = "http://localhost:3000";
+
+// ─── App State ────
+// FIX: state persisted via localStorage so type/action survive re-renders
 
 const state = {
-  token:         null,
-  username:      null,
-  activeType:    "Length",
-  activeAction:  "comparison",
-  activeSubOp:   "ADD",
-  debounceTimer: null
+  token:        sessionStorage.getItem("token")  ?? null,
+  username:     sessionStorage.getItem("username") ?? null,
+  // Persist selected type & action to fix "switches back to Length" bug
+  get activeType()   { return localStorage.getItem("app_activeType")   ?? "Length"; },
+  set activeType(v)  { localStorage.setItem("app_activeType", v); },
+  get activeAction() { return localStorage.getItem("app_activeAction") ?? "comparison"; },
+  set activeAction(v){ localStorage.setItem("app_activeAction", v); },
+  get activeSubOp()  { return localStorage.getItem("app_activeSubOp")  ?? "ADD"; },
+  set activeSubOp(v) { localStorage.setItem("app_activeSubOp", v); }
 };
+
+// ─── API Service ──
 
 class ApiService {
   constructor(backendBase, jsonBase) {
@@ -91,12 +102,16 @@ class ApiService {
   }
 
   async _post(endpoint, body) {
+    const headers = { "Content-Type": "application/json" };
+    // Only attach the Authorization header when a token is present.
+    // Public dashboard endpoints work without a token; sending "Bearer null"
+    // causes the server to reject the request with 401.
+    if (state.token) {
+      headers["Authorization"] = `Bearer ${state.token}`;
+    }
     const res = await fetch(`${this.backendBase}${endpoint}`, {
       method:  "POST",
-      headers: {
-        "Content-Type":  "application/json",
-        "Authorization": `Bearer ${state.token}`
-      },
+      headers,
       body: JSON.stringify(body)
     });
     if (!res.ok) {
@@ -106,37 +121,44 @@ class ApiService {
     return res.json();
   }
 
+  // ── Full history via backend (JSON Server as proxy) 
+
   async saveHistory(record) {
     try {
       await fetch(`${this.jsonBase}/history`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(record)
+        body:    JSON.stringify({ ...record, user: state.username ?? "guest" })
       });
     } catch (e) {
-      console.warn("JSON Server not reachable — history not saved:", e);
+      console.warn("JSON Server not reachable — history not persisted:", e);
     }
   }
 
-  async loadHistory() {
+  async loadFullHistory() {
     try {
       const res = await fetch(`${this.jsonBase}/history`);
       if (!res.ok) throw new Error("offline");
-      return await res.json();
+      const all = await res.json();
+      // Filter by current user
+      return all.filter(h => h.user === state.username);
     } catch (e) {
       return null;
     }
   }
 
-  async clearHistory() {
+  async clearFullHistory() {
     try {
-      const all = await this.loadHistory();
-      if (!all) return;
+      const all = await fetch(`${this.jsonBase}/history`).then(r => r.json());
+      // Only delete records belonging to current user
+      const mine = all.filter(r => r.user === state.username);
       await Promise.all(
-        all.map(r => fetch(`${this.jsonBase}/history/${r.id}`, { method: "DELETE" }))
+        mine.map(r => fetch(`${this.jsonBase}/history/${r.id}`, { method: "DELETE" }))
       );
+      // Set a flag so "Load Full History" won't re-fetch stale data
+      this.fullHistoryCleared = true;
     } catch (e) {
-      console.warn("Could not clear history:", e);
+      console.warn("Could not clear full history:", e);
     }
   }
 }
