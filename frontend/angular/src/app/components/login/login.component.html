@@ -1,0 +1,107 @@
+<div id="auth-page" class="page">
+  <div class="auth-scene">
+
+    <!-- Left decorative card -->
+    <div class="auth-deco-card">
+      <div class="deco-circle">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="100" cy="100" r="90" fill="#d6e6ff" opacity="0.6"/>
+          <circle cx="100" cy="100" r="70" fill="#a8c8ff" opacity="0.7"/>
+          <rect x="50" y="88" width="100" height="28" rx="5" fill="#5b8cff"/>
+          <rect x="50" y="88" width="100" height="28" rx="5" fill="none" stroke="#2a4fd4" stroke-width="1.5"/>
+          <line x1="62"  y1="88" x2="62"  y2="104" stroke="white" stroke-width="1.5"/>
+          <line x1="74"  y1="88" x2="74"  y2="100" stroke="white" stroke-width="1.5"/>
+          <line x1="86"  y1="88" x2="86"  y2="104" stroke="white" stroke-width="1.5"/>
+          <line x1="98"  y1="88" x2="98"  y2="100" stroke="white" stroke-width="1.5"/>
+          <line x1="110" y1="88" x2="110" y2="104" stroke="white" stroke-width="1.5"/>
+          <line x1="122" y1="88" x2="122" y2="100" stroke="white" stroke-width="1.5"/>
+          <line x1="134" y1="88" x2="134" y2="104" stroke="white" stroke-width="1.5"/>
+          <circle cx="100" cy="68" r="5" fill="#ffb347"/>
+          <line x1="100" y1="68" x2="100" y2="88" stroke="#2a4fd4" stroke-width="2"/>
+          <line x1="72" y1="76" x2="128" y2="76" stroke="#2a4fd4" stroke-width="2"/>
+          <path d="M72 76 Q66 82 72 88 Q78 82 72 76" fill="#e0edff" stroke="#2a4fd4" stroke-width="1"/>
+          <path d="M128 76 Q122 82 128 88 Q134 82 128 76" fill="#e0edff" stroke="#2a4fd4" stroke-width="1"/>
+          <rect x="91" y="118" width="8" height="28" rx="4" fill="white" stroke="#2a4fd4" stroke-width="1.5"/>
+          <circle cx="95" cy="148" r="6" fill="#fc5c65"/>
+          <rect x="92.5" y="130" width="5" height="18" rx="2" fill="#fc5c65"/>
+          <path d="M112 118 L112 136 L118 146 L106 146 Z" fill="white" stroke="#2a4fd4" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M112 138 L118 148 L106 148" fill="#a8c8ff" opacity="0.8" stroke="none"/>
+        </svg>
+      </div>
+      <p class="deco-label">QUANTITY MEASUREMENT APP</p>
+      <p class="deco-subtitle">Measure · Convert · Compare</p>
+    </div>
+
+    <!-- Right auth card -->
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="tab-btn" [class.active]="activeTab === 'login'" (click)="switchTab('login')">LOGIN</button>
+        <button class="tab-btn" [class.active]="activeTab === 'signup'" (click)="switchTab('signup')">SIGNUP</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form class="auth-form" *ngIf="activeTab === 'login'" [formGroup]="loginForm" (ngSubmit)="onLogin()" autocomplete="off">
+        <div class="field-group">
+          <label>Email Id</label>
+          <input type="text" formControlName="username" placeholder="Enter username or email" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        </div>
+
+        <div class="field-group">
+          <label>Password</label>
+          <div class="pw-wrap">
+            <input [type]="showLoginPw ? 'text' : 'password'" formControlName="password" placeholder="Enter password" autocomplete="new-password">
+            <button type="button" class="pw-toggle" (click)="toggleLoginPw()">
+              <span class="material-icons-round">{{ showLoginPw ? 'visibility' : 'visibility_off' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <p class="form-error" *ngIf="loginError">{{ loginError }}</p>
+        <button type="submit" class="btn-primary-red" [disabled]="loginLoading">Login</button>
+
+        <div class="or-divider">
+          <span class="dash-line"></span>OR<span class="dash-line"></span>
+        </div>
+
+        <p class="back-link">No account? <a href="#" (click)="switchTab('signup'); $event.preventDefault()">Create one</a></p>
+      </form>
+
+      <!-- SIGNUP FORM -->
+      <form class="auth-form" *ngIf="activeTab === 'signup'" [formGroup]="signupForm" (ngSubmit)="onSignup()" autocomplete="off">
+        <div class="field-group">
+          <label>Full Name</label>
+          <input type="text" formControlName="name" placeholder="Enter your full name" autocomplete="off">
+        </div>
+
+        <div class="field-group">
+          <label>Email Id</label>
+          <input type="text" formControlName="username" placeholder="Choose a username or email" autocomplete="off">
+        </div>
+
+        <div class="field-group">
+          <label>Password <span class="hint">(min 3 chars · uppercase · special char)</span></label>
+          <div class="pw-wrap">
+            <input [type]="showSignupPw ? 'text' : 'password'" formControlName="password" placeholder="e.g. Alice@1" autocomplete="new-password">
+            <button type="button" class="pw-toggle" (click)="toggleSignupPw()">
+              <span class="material-icons-round">{{ showSignupPw ? 'visibility' : 'visibility_off' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Mobile Number <span class="hint">(optional)</span></label>
+          <input type="text" formControlName="mobile" placeholder="Enter mobile number" autocomplete="off">
+        </div>
+
+        <p class="form-error" *ngIf="signupError">{{ signupError }}</p>
+        <button type="submit" class="btn-primary-red" [disabled]="signupLoading">Signup</button>
+
+        <p class="back-link">Already have an account? <a href="#" (click)="switchTab('login'); $event.preventDefault()">Login</a></p>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="app-toast" [class.show]="showToast">{{ toastMessage }}</div>

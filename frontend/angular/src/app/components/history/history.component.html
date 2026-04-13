@@ -1,0 +1,43 @@
+<div class="page">
+  <app-header></app-header>
+
+  <div style="max-width:800px;margin:32px auto;padding:0 20px;">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="clear-btn" (click)="goBack()">
+          <span class="material-icons-round" style="font-size:14px;vertical-align:middle;">arrow_back</span> Back
+        </button>
+        <h2 style="font-size:18px;font-weight:700;color:var(--text-dark);">
+          <span class="material-icons-round" style="vertical-align:middle;color:#5b8cff;">history</span>
+          Full History
+        </h2>
+      </div>
+      <button class="clear-btn" (click)="clearAll()" *ngIf="historyItems.length > 0">Clear All</button>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="isLoading" class="history-empty" style="padding:40px;text-align:center;">
+      Loading…
+    </div>
+
+    <!-- Error / empty message -->
+    <div *ngIf="!isLoading && errorMessage" class="history-empty" style="padding:40px;text-align:center;">
+      {{ errorMessage }}
+    </div>
+
+    <!-- History list -->
+    <div class="history-list" style="max-height:none;overflow:visible;" *ngIf="!isLoading && historyItems.length > 0">
+      <div
+        class="history-item"
+        *ngFor="let item of historyItems"
+        [ngClass]="'op-' + item.operation.toLowerCase()">
+        <div class="history-op">{{ item.type }} · {{ item.operation }}</div>
+        <div class="history-detail">{{ item.details }}</div>
+        <div class="history-outcome">{{ item.outcome }}</div>
+        <div class="history-time">{{ item.time }}</div>
+      </div>
+    </div>
+
+  </div>
+</div>

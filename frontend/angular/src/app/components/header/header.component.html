@@ -1,0 +1,21 @@
+<header class="dash-header">
+  <div class="header-brand">
+    <span class="material-icons-round" style="color:#5b8cff;font-size:22px;">straighten</span>
+    <span class="brand-title">Quantity Measurement</span>
+  </div>
+
+  <div class="header-right">
+    <span class="user-pill" *ngIf="isLoggedIn">
+      <span class="material-icons-round" style="font-size:18px;vertical-align:middle;">account_circle</span>
+      <span>{{ username }}</span>
+    </span>
+
+    <button class="btn-header-login" *ngIf="!isLoggedIn" (click)="goToLogin()">
+      <span class="material-icons-round" style="font-size:16px;">login</span> Login
+    </button>
+
+    <button class="btn-logout" *ngIf="isLoggedIn" (click)="logout()">
+      <span class="material-icons-round">logout</span> Logout
+    </button>
+  </div>
+</header>

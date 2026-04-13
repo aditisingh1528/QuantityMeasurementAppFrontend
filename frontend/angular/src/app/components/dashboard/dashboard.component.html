@@ -1,0 +1,163 @@
+<div id="dashboard-page" class="page">
+
+  <app-header></app-header>
+
+  <div class="dash-body">
+
+    <!-- Calculator Panel -->
+    <div class="calc-panel">
+
+      <div class="welcome-banner">Welcome To Quantity Measurement</div>
+
+      <div class="section-label">CHOOSE TYPE</div>
+      <div class="type-grid">
+        <button
+          class="type-card"
+          *ngFor="let type of measurementTypes"
+          [class.active]="activeType === type"
+          (click)="selectType(type)">
+          <span class="type-icon">{{ TYPE_ICONS[type] }}</span>
+          <span class="type-name">{{ type }}</span>
+        </button>
+      </div>
+
+      <div class="section-label">CHOOSE ACTION</div>
+      <div class="action-tabs">
+        <button
+          class="action-tab"
+          *ngFor="let action of actionTypes"
+          [class.active]="activeAction === action"
+          [disabled]="action === 'arithmetic' && isArithDisabled()"
+          [title]="action === 'arithmetic' && isArithDisabled() ? 'Not supported for Temperature' : ''"
+          (click)="selectAction(action)">
+          {{ action | titlecase }}
+        </button>
+      </div>
+
+      <!-- Arithmetic sub-op tabs -->
+      <div class="sub-tabs" *ngIf="activeAction === 'arithmetic'">
+        <button
+          class="sub-tab"
+          *ngFor="let op of subOps"
+          [class.active]="activeSubOp === op"
+          (click)="selectSubOp(op)">
+          <span *ngIf="op === 'ADD'">+ Add</span>
+          <span *ngIf="op === 'SUBTRACT'">− Subtract</span>
+          <span *ngIf="op === 'DIVIDE'">÷ Divide</span>
+        </button>
+      </div>
+
+      <div class="inputs-wrapper">
+
+        <div class="two-op-row">
+
+          <!-- Operand 1 -->
+          <div class="operand-card">
+            <div class="op-label">
+              <span *ngIf="activeAction === 'conversion'">FROM</span>
+              <span *ngIf="activeAction !== 'conversion'">VALUE 1</span>
+            </div>
+            <input type="number" class="big-number-input" [(ngModel)]="val1" step="any">
+            <div class="unit-select-row">
+              <select class="unit-select" [(ngModel)]="unit1">
+                <option *ngFor="let u of units" [value]="u">{{ UNIT_LABELS[u] }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Connector -->
+          <div class="op-connector">
+            <span class="connector-symbol">{{ getConnectorSymbol() }}</span>
+          </div>
+
+          <!-- Operand 2 -->
+          <div class="operand-card">
+            <div class="op-label">
+              <span *ngIf="activeAction === 'conversion'">TO</span>
+              <span *ngIf="activeAction === 'comparison'">COMPARE WITH</span>
+              <span *ngIf="activeAction === 'arithmetic'">VALUE 2</span>
+            </div>
+
+            <!-- Conversion: show result preview, hide input -->
+            <div class="big-number-input result-preview" *ngIf="activeAction === 'conversion'">{{ resultPreview }}</div>
+            <input type="number" class="big-number-input" [(ngModel)]="val2" step="any" *ngIf="activeAction !== 'conversion'">
+
+            <div class="unit-select-row">
+              <select class="unit-select" [(ngModel)]="unit2">
+                <option *ngFor="let u of units" [value]="u">{{ UNIT_LABELS[u] }}</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Comparison result -->
+        <div class="compare-result-row" *ngIf="activeAction === 'comparison' && compareResult !== '—'">
+          <div class="result-label-sm">RESULT</div>
+          <div class="compare-result-badge" [class.equal]="compareEqual" [class.not-equal]="!compareEqual">
+            {{ compareResult }}
+          </div>
+        </div>
+
+        <!-- Arithmetic result -->
+        <div class="arith-result-row" *ngIf="activeAction === 'arithmetic' && arithResultValue !== '—'">
+          <div class="result-label-sm">RESULT</div>
+          <div class="arith-result-value">{{ arithResultValue }}</div>
+          <span class="arith-result-unit">{{ arithResultUnit }}</span>
+        </div>
+
+        <button class="btn-execute" (click)="execute()" [disabled]="isLoading">
+          <span class="material-icons-round">play_arrow</span>
+          <span>{{ getExecuteLabel() }}</span>
+        </button>
+
+        <p class="api-error" *ngIf="apiError">{{ apiError }}</p>
+
+      </div>
+    </div>
+
+    <!-- History Sidebar -->
+    <aside class="history-sidebar">
+      <div class="history-top">
+        <div class="history-title">
+          <span class="material-icons-round">history</span> History
+        </div>
+        <div class="history-actions">
+          <button class="clear-btn" (click)="clearHistory()">Clear</button>
+        </div>
+      </div>
+
+      <!-- Not logged in prompt -->
+      <div class="history-login-prompt" *ngIf="!isLoggedIn">
+        <span class="material-icons-round" style="font-size:32px;color:#c5cce8;margin-bottom:8px;">lock</span>
+        <p>Session history shows below.</p>
+        <p><a (click)="goToLogin()" style="cursor:pointer;">Login</a> to save &amp; view full history.</p>
+      </div>
+
+      <!-- Load full history button (logged in only) -->
+      <div class="history-full-btn-row" *ngIf="isLoggedIn">
+        <button class="btn-load-history" (click)="loadFullHistory()" [disabled]="historyLoading">
+          <span class="material-icons-round" style="font-size:14px;">cloud_download</span>
+          {{ historyLoading ? 'Loading…' : 'Load Full History' }}
+        </button>
+      </div>
+
+      <div class="history-list">
+        <div class="history-empty" *ngIf="historyItems.length === 0">No operations yet</div>
+
+        <div
+          class="history-item"
+          *ngFor="let item of historyItems"
+          [ngClass]="'op-' + item.operation.toLowerCase()">
+          <div class="history-op">{{ item.type }} · {{ item.operation }}</div>
+          <div class="history-detail">{{ item.details }}</div>
+          <div class="history-outcome">{{ item.outcome }}</div>
+          <div class="history-time">{{ item.time }}</div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<div class="app-toast" [class.show]="showToast">{{ toastMessage }}</div>
