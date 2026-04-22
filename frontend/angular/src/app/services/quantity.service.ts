@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
 import { ApiResponse, CompareRequest, ConvertRequest, ArithmeticRequest } from '../models/quantity.model';
 
-const API_BASE = '/api/v1';
+const API_BASE = 'https://quantitymeasurementapp.onrender.com/api/v1';
 
 @Injectable({ providedIn: 'root' })
 export class QuantityService {

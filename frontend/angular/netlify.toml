@@ -1,0 +1,9 @@
+[build]
+  base    = "frontend/angular"
+  command = "npm run build"
+  publish = "dist/quantity-measurement-app/browser"
+
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
